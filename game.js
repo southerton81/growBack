@@ -135,9 +135,14 @@ let terrain = Sprite({
         this.context.fillRect(center[0] - horFlower / 2, center[1] + pollenSize,
           horFlower, defaultFlowerDimH)
 
+        let tx = Math.min(this.terrainColor.length, Math.floor(f[0] / terrainPixelSize))
+        let ty = Math.min(this.terrainColor[0].length, Math.floor(f[1] / terrainPixelSize))
+        if (this.terrainColor[tx][ty][1] == 0) {
+          this.terrainColor[tx][ty] = ["hsl(" + 126 + ", 100%, " + 55 + "%)", 1]
+        }
 
-        let tx = Math.floor(f[0] / terrainPixelSize)
-        let ty = Math.floor(f[1] / terrainPixelSize)
+        tx = Math.min( Math.max(0, tx + (-1 + Math.round(2 * Math.random()))), this.terrainColor.length )
+        ty = Math.min ( Math.max(0, ty + (-1 + Math.round(2 * Math.random()))), this.terrainColor[0].length )
         if (this.terrainColor[tx][ty][1] == 0) {
           this.terrainColor[tx][ty] = ["hsl(" + 126 + ", 100%, " + 55 + "%)", 1]
         }
