@@ -7,7 +7,13 @@ beeAnim[0].src = "./bee1.png"
 beeAnim[1].src = "./bee2.png"
 beeAnim[2].src = "./bee3.png"
 
-let terrainPixelSize = 40
+let terrainPixelSize = 140
+let startTimestamp = 0
+var ctx = canvas.getContext("2d")
+
+let clamp = function(number, min, max) {
+  return Math.round(Math.max(min, Math.min(number, max)));
+}
 
 let pollenPool = Pool({
   create: Sprite
@@ -70,11 +76,19 @@ let terrain = Sprite({
   y: 0,
   width: canvasWidth,
   height: canvasHeight, 
-  timestamp: 0, 
+  grassGrowTimestamp: Date.now(), 
+  sandGrowTimestamp: Date.now(), 
   terrainColor: initTerrain(canvasWidth / terrainPixelSize, canvasHeight / terrainPixelSize),
-  flowers: initFlowers(canvasWidth, canvasHeight, 5),
+  flowers: [],
   maxAge: 10,
  
+  init: function() {
+    this.flowers = initFlowers(canvasWidth, canvasHeight, 5)
+    this.flowers.forEach(it => {
+      this.modTerrain(it[0], it[1], 1)
+    }) 
+  },
+
   renderFlowers: function (flowers) { 
     
     flowers.forEach(f => {
@@ -87,7 +101,7 @@ let terrain = Sprite({
       let polColor = f[8][1]
       let flowerColor = f[8][2]
       let hasPollen = f[10]
-      let pollenSize = age < 8 ? 2 : 4
+      let pollenSize = age < 5 ? 2 : 4
       let defaultFlowerDimH = 6
       let defaultFlowerDimV = 10
 
@@ -95,13 +109,13 @@ let terrain = Sprite({
         age = this.maxAge - (age - this.maxAge)
       }
 
-      let heightChangeRatio = height / this.maxAge
+      let heightChangeRatio = height / (this.maxAge - 3)
       height = Math.min(height, age * heightChangeRatio)
       let center = [f[0] - width, f[1] - height]
       this.context.fillStyle = stemColor
       this.context.fillRect(center[0], center[1], width, height)
 
-      if (age > 7) {
+      if (age > 4) {
         this.context.fillStyle = polColor
         let pX = center[0] - pollenSize
         let pY = center[1] - pollenSize
@@ -113,13 +127,13 @@ let terrain = Sprite({
           y: pY,
           width: w,
           height: h,
-          color: hasPollen ? 'black' : 'gray',
+          color: hasPollen ? 'orange' : 'white',
           flower: f,
           ttl: 1
         })
       }
 
-      if (age > 5) {
+      if (age > 4) {
         defaultFlowerDimV = defaultFlowerDimV / Math.max(1, (this.maxAge - age))
         defaultFlowerDimH = defaultFlowerDimH / Math.max(1, (this.maxAge - age))
         horFlower = horFlower / Math.max(1, (this.maxAge - age))
@@ -134,18 +148,6 @@ let terrain = Sprite({
           horFlower, defaultFlowerDimH)
         this.context.fillRect(center[0] - horFlower / 2, center[1] + pollenSize,
           horFlower, defaultFlowerDimH)
-
-        let tx = Math.min(this.terrainColor.length, Math.floor(f[0] / terrainPixelSize))
-        let ty = Math.min(this.terrainColor[0].length, Math.floor(f[1] / terrainPixelSize))
-        if (this.terrainColor[tx][ty][1] == 0) {
-          this.terrainColor[tx][ty] = ["hsl(" + 126 + ", 100%, " + 55 + "%)", 1]
-        }
-
-        tx = Math.min( Math.max(0, tx + (-1 + Math.round(2 * Math.random()))), this.terrainColor.length )
-        ty = Math.min ( Math.max(0, ty + (-1 + Math.round(2 * Math.random()))), this.terrainColor[0].length )
-        if (this.terrainColor[tx][ty][1] == 0) {
-          this.terrainColor[tx][ty] = ["hsl(" + 126 + ", 100%, " + 55 + "%)", 1]
-        }
       }
     })
 
@@ -153,20 +155,76 @@ let terrain = Sprite({
     seedPool.render()
   },
 
+  updateTerrain: function () {
+    let period = Date.now() - this.grassGrowTimestamp
+    if (period > 2500) {
+      this.flowers.forEach(f => {
+        let tx = clamp(Math.floor(f[0] / terrainPixelSize), 0, this.terrainColor.length - 1)
+        let ty = clamp(Math.floor(f[1] / terrainPixelSize), 0, this.terrainColor[0].length - 1)
+
+        if (this.terrainColor[tx][ty][1] == 0) {
+          let cnt = this.terrainColor[tx][ty][2]
+          this.terrainColor[tx][ty] = [initGrassColor(), 1, cnt]
+        }
+
+        tx = Math.min(Math.max(0, tx + (-1 + Math.round(2 * Math.random()))), this.terrainColor.length - 1)
+        ty = Math.min(Math.max(0, ty + (-1 + Math.round(2 * Math.random()))), this.terrainColor[0].length - 1)
+        if (this.terrainColor[tx][ty][1] == 0) {
+          let cnt = this.terrainColor[tx][ty][2]
+          this.terrainColor[tx][ty] = [initGrassColor(), 1, cnt]
+        }
+      })
+
+      this.grassGrowTimestamp = Date.now()
+    }
+
+    period = Date.now() - this.sandGrowTimestamp
+    if (period > 2500) {
+      for (let y = 0; y < this.terrainColor[0].length; y++) {
+        for (let x = 0; x < this.terrainColor.length; x++) {
+          let cell = this.terrainColor[x][y]
+          if (cell[1] == 1 && cell[2] <= 0) {
+            cell[0] = initSandColor()
+            cell[1] = 0
+            break
+          }   
+        }
+      }
+
+      this.sandGrowTimestamp = Date.now()
+    }
+  },
+
+  modTerrain: function (x, y, value) {
+    let fromX = clamp((x / terrainPixelSize) - 2, 0, this.terrainColor.length - 1)
+    let toX = clamp((x / terrainPixelSize) + 2, 0, this.terrainColor.length - 1)
+    let fromY = clamp((y / terrainPixelSize) - 2, 0, this.terrainColor[0].length - 1)
+    let toY = clamp((y / terrainPixelSize) + 2, 0, this.terrainColor[0].length - 1)
+
+    for (h = fromX; h <= toX; h++) {
+      for (v = fromY; v <= toY; v++) {
+        this.terrainColor[h][v][2] += value
+      }
+    }
+  },
+
   render: function () { 
+    let hasSand = 1
     for (x = 0; x < canvasWidth; x += terrainPixelSize) {
       for (y = 0; y < canvasHeight; y += terrainPixelSize) {
-        this.context.fillStyle = this.terrainColor[x / terrainPixelSize][y / terrainPixelSize][0]
+        let cell = this.terrainColor[x / terrainPixelSize][y / terrainPixelSize]
+        this.context.fillStyle = cell[0]
         this.context.fillRect(x, y, x + terrainPixelSize, y + terrainPixelSize)
+         hasSand &= cell[1] 
       }
     }
 
     this.renderFlowers(this.flowers)
+    return hasSand
   },
 
   update: function (dt) {
     let len = this.flowers.length
-
     let pollenSprites = pollenPool.getAliveObjects() 
     quadtree.clear()
     quadtree.add(pollenSprites)
@@ -206,6 +264,7 @@ let terrain = Sprite({
 
                   if (Math.random() > .5) {
                     terrain.flowers.push(createFlower(this.x, this.y))
+                    terrain.modTerrain(this.x, this.y, 1)
                   }
                 }
 
@@ -229,32 +288,73 @@ let terrain = Sprite({
 
     pollenPool.update(dt)
     seedPool.update(dt)
+    this.updateTerrain()
 
     while (len--) {
       let f = this.flowers[len]
       let creationTimestamp = f[9]
       let timeSpanSec = (Date.now() - creationTimestamp) / 1000
       f[2] = timeSpanSec / agePerSec
-      if (f[2] > 20) {
+      if (f[2] > 12) {
         this.flowers.splice(len, 1)
+        this.modTerrain(f[0], f[1], -1)
       }
     }
   }
 })
 
 let loop = GameLoop({ 
-  update: function(dt) { 
-    terrain.update(dt)
-    bee.update(dt)
+  gameStartedFlag: false,
+  gameOverFlag: false,
 
-    updateController() 
+  update: function(dt) { 
+    if (this.gameStartedFlag) {
+      terrain.update(dt)
+      bee.update(dt)
+      updateController() 
+      checkGameOver()
+    }
   },
 
   render: function() { 
-    terrain.render()
+    let hasSand = terrain.render()
     bee.render()
+
+    if (!this.gameStartedFlag) {
+      ctx.font = "170px ma"
+      ctx.fillStyle =  "white"
+      ctx.textAlign = "center"
+      ctx.fillText("GROW BACK", canvas.width/2, canvas.height/2 - 200)
+      ctx.font = "50px ma" 
+      ctx.fillText("Oil diggers turned this little planet into a desert", canvas.width/2, canvas.height/2)
+      ctx.fillText("Collect pollen from flowers to spread the life back", canvas.width/2, canvas.height/2 + 50)
+      ctx.fillText("Use arrow keys to fly around", canvas.width/2, canvas.height/2 + 100)
+      ctx.fillText("Press any key to start...", canvas.width/2, canvas.height/2 + 200)
+    } else if (!hasSand) {
+      ctx.font = "170px ma"
+      ctx.fillStyle =  "white"
+      ctx.textAlign = "center"
+      ctx.fillText("You have won!", canvas.width/2, canvas.height/2)
+      ctx.font = "100px ma"
+      let timeSec = (Date.now() - startTimestamp) / 1000
+      let timeMin = timeSec / 60
+      timeSec = timeSec % 60
+      ctx.fillText("time taken: " + timeMin + " min " + timeSec + " s", canvas.width/2, canvas.height/2 + 150)
+    } else if (this.gameOverFlag) {
+      ctx.font = "170px ma"
+      ctx.fillStyle =  "white"
+      ctx.textAlign = "center"
+      ctx.fillText("Game over", canvas.width/2, canvas.height/2)
+    }
   }
 })
+
+document.onkeydown=function(e){
+  terrain.init()
+  loop.gameStartedFlag = true
+  startTimestamp = Date.now()
+  document.onkeydown=function(e){}
+}
 
 function updateController() {
   const magnitude = Math.sqrt(bee.dx * bee.dx + bee.dy * bee.dy);
@@ -276,7 +376,12 @@ function updateController() {
   }
 }
 
+function checkGameOver() {
+  if (terrain.flowers.length == 0) {
+    loop.gameOverFlag = true
+  }
+}
+
 initKeys()
 initSize()
 loop.start()
- 

@@ -12,7 +12,7 @@ canvas.height = canvasHeight
 
 d.style.webkitTransformOrigin = d.style.transformOrigin = "0 0"
 
-let agePerSec = 2
+let agePerSec = 1.5
 
 function initSize() {
   let innerWidth = window.innerWidth
@@ -34,16 +34,29 @@ function initTerrain(w, h) {
   let soilHue = 22
   let soilMinLight = 40
   let soilMaxLight = 55
-  let grassHue = 126
-  let grassMinLight = 35
-  let grassMaxLight = 60
   for (let x = 0; x < w; x++) {
     for (let y = 0; y < h; y++) {
       let lightness = soilMinLight + Math.random() * (soilMaxLight - soilMinLight)
-      terrain[x][y] = ["hsl(" + soilHue + ", 100%, " + lightness + "%)", 0 /*soil type*/ ]
+      terrain[x][y] = ["hsl(" + soilHue + ", 100%, " + lightness + "%)", 0 /*soil type*/, 0 /*cnt of protecting*/ ]
     }
   }
   return terrain
+}
+
+function initSandColor() {
+  let soilHue = 22
+  let soilMinLight = 40
+  let soilMaxLight = 55
+  let lightness = soilMinLight + Math.random() * (soilMaxLight - soilMinLight)
+  return "hsl(" + soilHue + ", 100%, " + lightness + "%)"
+}
+
+function initGrassColor() {
+  let grassHue = 126
+  let grassMinLight = 35
+  let grassMaxLight = 60
+  let lightness = grassMinLight + Math.random() * (grassMaxLight - grassMinLight)
+  return "hsl(" + grassHue + ", 100%, " + lightness + "%)"
 }
 
 function initFlowers(w, h, count) {
