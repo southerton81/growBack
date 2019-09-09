@@ -7,9 +7,10 @@ beeAnim[0].src = "./bee1.png"
 beeAnim[1].src = "./bee2.png"
 beeAnim[2].src = "./bee3.png"
 
-let terrainPixelSize = 140
+let terrainPixelSize = 200
 let startTimestamp = 0
 var ctx = canvas.getContext("2d")
+let maxCovered = 0
 
 let clamp = function(number, min, max) {
   return Math.round(Math.max(min, Math.min(number, max)));
@@ -78,11 +79,14 @@ let terrain = Sprite({
   height: canvasHeight, 
   grassGrowTimestamp: Date.now(), 
   sandGrowTimestamp: Date.now(), 
-  terrainColor: initTerrain(canvasWidth / terrainPixelSize, canvasHeight / terrainPixelSize),
+  terrainColor: null,
   flowers: [],
   maxAge: 10,
  
   init: function() {
+    this.grassGrowTimestamp = Date.now()
+    this.sandGrowTimestamp = Date.now()
+    this.terrainColor = initTerrain(canvasWidth / terrainPixelSize, canvasHeight / terrainPixelSize)
     this.flowers = initFlowers(canvasWidth, canvasHeight, 5)
     this.flowers.forEach(it => {
       this.modTerrain(it[0], it[1], 1)
@@ -209,18 +213,23 @@ let terrain = Sprite({
   },
 
   render: function () { 
-    let hasSand = 1
+    let grassCnt = 0
     for (x = 0; x < canvasWidth; x += terrainPixelSize) {
       for (y = 0; y < canvasHeight; y += terrainPixelSize) {
         let cell = this.terrainColor[x / terrainPixelSize][y / terrainPixelSize]
         this.context.fillStyle = cell[0]
         this.context.fillRect(x, y, x + terrainPixelSize, y + terrainPixelSize)
-         hasSand &= cell[1] 
+        grassCnt += cell[1] 
       }
     }
 
-    this.renderFlowers(this.flowers)
-    return hasSand
+    this.renderFlowers(this.flowers) 
+    let totalCnt = Math.floor((canvasWidth / terrainPixelSize) * (canvasHeight / terrainPixelSize))
+   
+    let covered = grassCnt / totalCnt 
+    if (maxCovered < covered)
+      maxCovered = covered   
+    return covered
   },
 
   update: function (dt) {
@@ -295,13 +304,19 @@ let terrain = Sprite({
       let creationTimestamp = f[9]
       let timeSpanSec = (Date.now() - creationTimestamp) / 1000
       f[2] = timeSpanSec / agePerSec
-      if (f[2] > 12) {
-        this.flowers.splice(len, 1)
-        this.modTerrain(f[0], f[1], -1)
+      if (f[2] > f[11]/*max age*/) {
+        if (Math.random() > .95) {
+          this.flowers.splice(len, 1)
+          this.modTerrain(f[0], f[1], -1)
+        }
       }
     }
   }
 })
+
+
+let statsText = null
+terrain.init()
 
 let loop = GameLoop({ 
   gameStartedFlag: false,
@@ -317,7 +332,7 @@ let loop = GameLoop({
   },
 
   render: function() { 
-    let hasSand = terrain.render()
+    let covered = terrain.render() 
     bee.render()
 
     if (!this.gameStartedFlag) {
@@ -328,29 +343,45 @@ let loop = GameLoop({
       ctx.font = "50px ma" 
       ctx.fillText("Oil diggers turned this little planet into a desert", canvas.width/2, canvas.height/2)
       ctx.fillText("Collect pollen from flowers to spread the life back", canvas.width/2, canvas.height/2 + 50)
-      ctx.fillText("Use arrow keys to fly around", canvas.width/2, canvas.height/2 + 100)
+      ctx.fillText("Use arrow keys to fly", canvas.width/2, canvas.height/2 + 100)
       ctx.fillText("Press any key to start...", canvas.width/2, canvas.height/2 + 200)
-    } else if (!hasSand) {
+    } else if (covered == 1) {
       ctx.font = "170px ma"
       ctx.fillStyle =  "white"
       ctx.textAlign = "center"
       ctx.fillText("You have won!", canvas.width/2, canvas.height/2)
-      ctx.font = "100px ma"
-      let timeSec = (Date.now() - startTimestamp) / 1000
-      let timeMin = timeSec / 60
-      timeSec = timeSec % 60
-      ctx.fillText("time taken: " + timeMin + " min " + timeSec + " s", canvas.width/2, canvas.height/2 + 150)
+      ctx.font = "80px ma"
+      if (statsText === null) {
+        let timeSec = (Date.now() - startTimestamp) / 1000
+        let timeMin = Math.floor(timeSec / 60)
+        timeSec = Math.floor(timeSec % 60)
+        statsText = "time: " + timeMin + " min " + timeSec + " s"
+
+        document.onkeydown = function(e) {
+          if (e.code == 'KeyR') {
+            covered = 0
+            statsText = null
+            terrain.init()
+            loop.gameStartedFlag = true
+            startTimestamp = Date.now()
+            document.onkeydown=function(e){}
+          }
+        }
+      }
+      ctx.fillText(statsText, canvas.width/2, canvas.height/2 + 150)
+      ctx.fillText("press R to restart", canvas.width/2, canvas.height/2 + 250)
     } else if (this.gameOverFlag) {
       ctx.font = "170px ma"
       ctx.fillStyle =  "white"
       ctx.textAlign = "center"
       ctx.fillText("Game over", canvas.width/2, canvas.height/2)
+      ctx.font = "80px ma"
+      ctx.fillText("Best planted: " + Math.floor(maxCovered * 100) + " percent", canvas.width/2, canvas.height/2 + 200)
     }
   }
 })
 
-document.onkeydown=function(e){
-  terrain.init()
+document.onkeydown = function(e){
   loop.gameStartedFlag = true
   startTimestamp = Date.now()
   document.onkeydown=function(e){}

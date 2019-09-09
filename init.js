@@ -144,6 +144,7 @@ function createFlower(x, y, age = 0) {
     leafs,
     [stemColor, pollenColor, flowerColor],
     Date.now() - (agePerSec * 1000 * age), /*created at*/
-    true/*has pollen*/
+    true,/*has pollen*/
+    11 + (Math.random() * 3) /*max age*/
   ]
 }
