@@ -3,11 +3,11 @@ const beeAnim = [
   new Image(),
   new Image()
 ]
-beeAnim[0].src = "./bee1.png"
-beeAnim[1].src = "./bee2.png"
-beeAnim[2].src = "./bee3.png"
+beeAnim[0].src = "./assets/bee1.png"
+beeAnim[1].src = "./assets/bee2.png"
+beeAnim[2].src = "./assets/bee3.png"
 
-let terrainPixelSize = 200
+let terrainPixelSize = 70
 let startTimestamp = 0
 var ctx = canvas.getContext("2d")
 let maxCovered = 0
@@ -27,8 +27,8 @@ let seedPool = Pool({
 let quadtree = Quadtree()
 
 let bee = Sprite({
-  x: 100,
-  y: 100,
+  x: canvas.width / 2,
+  y: canvas.height / 2 - 120,
   width: 34,
   height: 28,
   dx: 3,
@@ -101,6 +101,7 @@ let terrain = Sprite({
       let height = f[4] 
       let horFlower = f[5]
       let verFlower = f[6]
+      let leafs = f[7]
       let stemColor = f[8][0]
       let polColor = f[8][1]
       let flowerColor = f[8][2]
@@ -118,6 +119,33 @@ let terrain = Sprite({
       let center = [f[0] - width, f[1] - height]
       this.context.fillStyle = stemColor
       this.context.fillRect(center[0], center[1], width, height)
+
+
+      leafs.forEach(l => {
+        let base = l[0]
+        let side = l[1]
+        let form = l[2]
+        if (height > base) {
+          let startX = f[0] - width
+          let startY = f[1] - base
+          
+          let currX = startX 
+          let currY = startY
+
+          form.forEach(frm => {
+            if (frm == 0) {
+              currX+=side
+              currY-=1
+            } else if (frm == 1) {
+              currY-=1
+            } else {
+              currX+=side
+            }
+          })
+          this.context.fillRect(currX, currY, 2, 2)
+        }
+      })
+
 
       if (age > 4) {
         this.context.fillStyle = polColor
@@ -345,6 +373,8 @@ let loop = GameLoop({
       ctx.fillText("Collect pollen from flowers to spread the life back", canvas.width/2, canvas.height/2 + 50)
       ctx.fillText("Use arrow keys to fly", canvas.width/2, canvas.height/2 + 100)
       ctx.fillText("Press any key to start...", canvas.width/2, canvas.height/2 + 200)
+
+      ctx.fillText("game for js13kgames by dmitriy kurovskiy", canvas.width/2, canvas.height/2 + 260)
     } else if (covered == 1) {
       ctx.font = "170px ma"
       ctx.fillStyle =  "white"
@@ -356,20 +386,10 @@ let loop = GameLoop({
         let timeMin = Math.floor(timeSec / 60)
         timeSec = Math.floor(timeSec % 60)
         statsText = "time: " + timeMin + " min " + timeSec + " s"
-
-        document.onkeydown = function(e) {
-          if (e.code == 'KeyR') {
-            covered = 0
-            statsText = null
-            terrain.init()
-            loop.gameStartedFlag = true
-            startTimestamp = Date.now()
-            document.onkeydown=function(e){}
-          }
-        }
       }
       ctx.fillText(statsText, canvas.width/2, canvas.height/2 + 150)
       ctx.fillText("press R to restart", canvas.width/2, canvas.height/2 + 250)
+      listenForRetry()
     } else if (this.gameOverFlag) {
       ctx.font = "170px ma"
       ctx.fillStyle =  "white"
@@ -377,11 +397,28 @@ let loop = GameLoop({
       ctx.fillText("Game over", canvas.width/2, canvas.height/2)
       ctx.font = "80px ma"
       ctx.fillText("Best planted: " + Math.floor(maxCovered * 100) + " percent", canvas.width/2, canvas.height/2 + 200)
+      ctx.fillText("Press R to try again", canvas.width/2, canvas.height/2 + 260)
+      listenForRetry()
     }
   }
 })
 
-document.onkeydown = function(e){
+function listenForRetry() {
+  document.onkeydown = function(e) {
+    if (e.code == 'KeyR') {
+      covered = 0
+      statsText = null
+      terrain.init()
+      loop.gameStartedFlag = true
+      loop.gameOverFlag = false
+      startTimestamp = Date.now()
+      document.onkeydown=function(e){}
+    }
+  }
+}
+
+document.onkeydown = function(e) {
+  terrain.init()
   loop.gameStartedFlag = true
   startTimestamp = Date.now()
   document.onkeydown=function(e){}

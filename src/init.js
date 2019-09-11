@@ -14,6 +14,10 @@ d.style.webkitTransformOrigin = d.style.transformOrigin = "0 0"
 
 let agePerSec = 1.5
 
+window.addEventListener("resize", function() {
+  initSize()
+})
+
 function initSize() {
   let innerWidth = window.innerWidth
   let innerHeight = window.innerHeight
@@ -76,7 +80,7 @@ function initFlowers(w, h, count) {
       y = 100 + Math.random() * (h - 200)
     }
 
-    flowers.push(createFlower(x, y, 7))
+    flowers.push(createFlower(x, y, 4))
     flowerPosX = x
     flowerPosY = y
   }
@@ -103,11 +107,11 @@ function createFlower(x, y, age = 0) {
     [359, 70, 80]
   ]
 
-  let leafsCount = 1 + Math.random() * 4
+  let leafsCount = 1 + Math.random() * 1
   let leafs = []
 
   for (let l = 0; l < leafsCount; l++) {
-    let leafLength = Math.round(2 + Math.random() * 4)
+    let leafLength = Math.round(2 + Math.random() * 1)
 
     let leafForm = []
     for (len = 0; len < leafLength; len++) {
@@ -116,9 +120,10 @@ function createFlower(x, y, age = 0) {
       leafForm.push(dir)
     }
 
+    let side = Math.random() > .5 ? 1 : -1
     leafs.push([
-      Math.random() * 10 /*base*/,
-      Math.round(Math.random()) /*side 0 or 1*/,
+      Math.random() * 20 /*base*/,
+      side,
       leafForm /*form of the leaf*/
     ])
   }
