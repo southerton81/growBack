@@ -252,14 +252,21 @@ let terrain = Sprite({
     }
 
     this.renderFlowers(this.flowers) 
+<<<<<<< HEAD
     let totalCnt = (Math.ceil(canvasWidth / terrainPixelSize) * Math.ceil(canvasHeight / terrainPixelSize))
+=======
+    let totalCnt = Math.floor((canvasWidth / terrainPixelSize) * (canvasHeight / terrainPixelSize))
+>>>>>>> 36045c5916903b8009ec1555c9e2477ae1416200
    
     let covered = grassCnt / totalCnt 
     if (maxCovered < covered)
       maxCovered = covered   
+<<<<<<< HEAD
 
       console.log('total ' + totalCnt)
       console.log('grass ' + grassCnt)
+=======
+>>>>>>> 36045c5916903b8009ec1555c9e2477ae1416200
     return covered
   },
 
