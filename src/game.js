@@ -252,21 +252,11 @@ let terrain = Sprite({
     }
 
     this.renderFlowers(this.flowers) 
-<<<<<<< HEAD
-    let totalCnt = (Math.ceil(canvasWidth / terrainPixelSize) * Math.ceil(canvasHeight / terrainPixelSize))
-=======
     let totalCnt = Math.floor((canvasWidth / terrainPixelSize) * (canvasHeight / terrainPixelSize))
->>>>>>> 36045c5916903b8009ec1555c9e2477ae1416200
    
     let covered = grassCnt / totalCnt 
     if (maxCovered < covered)
       maxCovered = covered   
-<<<<<<< HEAD
-
-      console.log('total ' + totalCnt)
-      console.log('grass ' + grassCnt)
-=======
->>>>>>> 36045c5916903b8009ec1555c9e2477ae1416200
     return covered
   },
 
@@ -379,12 +369,10 @@ let loop = GameLoop({
       ctx.textAlign = "center"
       ctx.fillText("GROW BACK", canvas.width/2, canvas.height/2 - 200)
       ctx.font = "50px ma" 
-      ctx.fillText("Oil diggers turned this little planet into a desert", canvas.width/2, canvas.height/2)
+      ctx.fillText("Turn a desert into greenfield", canvas.width/2, canvas.height/2)
       ctx.fillText("Collect pollen from flowers to spread the life back", canvas.width/2, canvas.height/2 + 50)
       ctx.fillText("Use arrow keys to fly", canvas.width/2, canvas.height/2 + 100)
       ctx.fillText("Press any key to start...", canvas.width/2, canvas.height/2 + 200)
-
-      ctx.fillText("game for js13kgames by dmitriy kurovskiy", canvas.width/2, canvas.height/2 + 260)
     } else if (covered == 1) {
       ctx.font = "170px ma"
       ctx.fillStyle =  "white"
@@ -406,7 +394,7 @@ let loop = GameLoop({
       ctx.textAlign = "center"
       ctx.fillText("Game over", canvas.width/2, canvas.height/2)
       ctx.font = "80px ma"
-      ctx.fillText("Best planted: " + Math.floor(maxCovered * 100) + " percent", canvas.width/2, canvas.height/2 + 200)
+      ctx.fillText("Best planted" + Math.floor(maxCovered * 100) + " percent", canvas.width/2, canvas.height/2 + 200)
       ctx.fillText("Press R to try again", canvas.width/2, canvas.height/2 + 260)
       listenForRetry()
     }
@@ -417,6 +405,7 @@ function listenForRetry() {
   document.onkeydown = function(e) {
     if (e.code == 'KeyR') {
       covered = 0
+      maxCovered = 0
       statsText = null
       terrain.init()
       loop.gameStartedFlag = true
@@ -444,12 +433,16 @@ function updateController() {
   bee.ddx = 0
   bee.ddy = 0
   if (keyPressed('left')) {
+    if (bee.dx > 0) bee.dx = 0 
     bee.ddx = -200
   } else if (keyPressed('right')) {
+    if (bee.dx < 0) bee.dx = 0 
     bee.ddx = 200
   } else if (keyPressed('up')) {
+    if (bee.dy > 0) bee.dy = 0 
     bee.ddy = -200
   } else if (keyPressed('down')) {
+    if (bee.dy < 0) bee.dy = 0 
     bee.ddy = 200
   }
 }
