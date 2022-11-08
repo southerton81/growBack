@@ -30,6 +30,7 @@ function initSize() {
     gameScale = Math.min(gameScale, 1)
     d.style.webkitTransform = d.style.transform = "scale(" + gameScale + ")"
     d.style.left = (innerWidth - canvasWidth * gameScale) / 2 + "px"
+    d.style.top = (lastHeight - canvasHeight * gameScale) / 2 + "px"
   }
 }
 
